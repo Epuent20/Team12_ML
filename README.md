@@ -32,8 +32,6 @@ Defined a cost-minimization objective (`energy_cost + 0.01 × temp_deviation`), 
 
 ## Quick start
 
-```bash
-pip install pandas scikit-learn matplotlib seaborn
 
 # Phase 1 — classifier comparison
 python classifiers_analysis.py
@@ -45,12 +43,11 @@ python kW.py
 python cooling_strategy_optimizer.py
 python plot_labels.py
 python plot_old_labels.py
-```
+
 
 ## Output
 
 All results save to `output/`. Key artifacts:
 
 - `random_forest_model.pkl` — trained Phase 3 model
-- `results.json` — metrics and feature importances
 - `*.png` — confusion matrices, feature importance, PCA/t-SNE projections, old vs new label comparisons

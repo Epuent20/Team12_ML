@@ -1,0 +1,178 @@
+"""
+Label Datapoint Visualizer
+==========================
+Generates color-coded scatter plots of the OPTIMIZED (new) labels so you can
+visually inspect how labels map onto the feature space.
+
+All shared constants and the compute_labels logic come from
+cooling_strategy_optimizer.py — this file only contains plot functions.
+
+Outputs (saved to output/):
+    new_labels_scatter_grid.png   — 2-D scatter grid across key feature pairs
+    new_labels_pca_projection.png — PCA 2-D projection of all features
+    new_labels_tsne_projection.png — t-SNE 2-D projection (slower, ~30 s)
+
+Called by cooling_strategy_optimizer.py
+"""
+
+import os
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.manifold import TSNE
+
+# ─── Shared config — imported from the main pipeline ─────────────────────────
+from cooling_strategy_optimizer import (
+    FEATURE_COLS, PALETTE, OUTPUT_DIR,
+)
+
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+def legend_patches(palette):
+    return [mpatches.Patch(color=c, label=lbl) for lbl, c in palette.items()]
+
+
+def get_colors(series, palette):
+    return series.map(palette).fillna("#AAAAAA")
+
+
+# ─── Plot 1 — Scatter grid ────────────────────────────────────────────────────
+
+def plot_scatter_grid(df):
+    pairs = [
+        ("Server_Workload(%)",              "Outlet_Temperature(°C)"),
+        ("Inlet_Temperature(°C)",           "Cooling_Unit_Power_Consumption(kW)"),
+        ("Chiller_Usage(%)",                "AHU_Usage(%)"),
+        ("Total_Energy_Cost($)",            "Temperature_Deviation(°C)"),
+        ("Ambient_Temperature(°C)",         "Total_Energy_Cost($)"),
+        ("Server_Workload(%)",              "Chiller_Usage(%)"),
+    ]
+
+    fig, axes = plt.subplots(2, 3, figsize=(18, 11))
+    fig.patch.set_facecolor("#0F1117")
+    axes = axes.flatten()
+
+    # Sample for speed (keep all if small dataset)
+    sample = df.sample(min(4000, len(df)), random_state=42)
+    colors = get_colors(sample["Optimal_Strategy"], PALETTE)
+
+    for ax, (xcol, ycol) in zip(axes, pairs):
+        ax.set_facecolor("#1A1D27")
+        ax.scatter(
+            sample[xcol], sample[ycol],
+            c=colors, s=14, alpha=0.65, linewidths=0,
+        )
+        # Axis labels — strip unit suffix for brevity
+        ax.set_xlabel(xcol.split("(")[0].strip(), color="#CCCCCC", fontsize=9)
+        ax.set_ylabel(ycol.split("(")[0].strip(), color="#CCCCCC", fontsize=9)
+        ax.tick_params(colors="#AAAAAA", labelsize=8)
+        for spine in ax.spines.values():
+            spine.set_edgecolor("#333344")
+
+    # Shared legend
+    fig.legend(
+        handles=legend_patches(PALETTE),
+        loc="lower center", ncol=5,
+        framealpha=0.15, labelcolor="white",
+        fontsize=10, bbox_to_anchor=(0.5, 0.01),
+    )
+
+    fig.suptitle(
+        "Cooling Strategy Labels — Feature-Space Scatter Grid",
+        color="white", fontsize=15, fontweight="bold", y=0.98,
+    )
+    plt.tight_layout(rect=[0, 0.06, 1, 0.97])
+    out = os.path.join(OUTPUT_DIR, "new_labels_scatter_grid.png")
+    fig.savefig(out, dpi=150, facecolor=fig.get_facecolor())
+    plt.close(fig)
+    print(f"  Saved: {out}")
+
+
+# ─── Plot 2 — PCA ─────────────────────────────────────────────────────────────
+
+def plot_pca(df):
+    X      = df[FEATURE_COLS].dropna()
+    labels = df.loc[X.index, "Optimal_Strategy"]
+
+    scaler = StandardScaler()
+    Xs     = scaler.fit_transform(X)
+    pca    = PCA(n_components=2, random_state=42)
+    Z      = pca.fit_transform(Xs)
+
+    ev     = pca.explained_variance_ratio_
+    colors = get_colors(labels, PALETTE)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    fig.patch.set_facecolor("#0F1117")
+    ax.set_facecolor("#1A1D27")
+
+    ax.scatter(Z[:, 0], Z[:, 1], c=colors, s=16, alpha=0.6, linewidths=0)
+    ax.set_xlabel(f"PC 1 ({ev[0]*100:.1f}% var)", color="#CCCCCC", fontsize=10)
+    ax.set_ylabel(f"PC 2 ({ev[1]*100:.1f}% var)", color="#CCCCCC", fontsize=10)
+    ax.tick_params(colors="#AAAAAA")
+    for spine in ax.spines.values():
+        spine.set_edgecolor("#333344")
+
+    ax.legend(
+        handles=legend_patches(PALETTE),
+        framealpha=0.2, labelcolor="white", fontsize=9,
+    )
+    ax.set_title(
+        "PCA Projection — Cooling Strategy Labels",
+        color="white", fontsize=14, fontweight="bold",
+    )
+    plt.tight_layout()
+    out = os.path.join(OUTPUT_DIR, "new_labels_pca_projection.png")
+    fig.savefig(out, dpi=150, facecolor=fig.get_facecolor())
+    plt.close(fig)
+    print(f"  Saved: {out}")
+    return ev
+
+
+# ─── Plot 3 — t-SNE ───────────────────────────────────────────────────────────
+
+def plot_tsne(df, n_sample=3000):
+    idx    = df[FEATURE_COLS].dropna().index
+    sample = df.loc[idx].sample(min(n_sample, len(idx)), random_state=42)
+    X      = sample[FEATURE_COLS].values
+    labels = sample["Optimal_Strategy"]
+
+    scaler = StandardScaler()
+    Xs     = scaler.fit_transform(X)
+
+    print("  Running t-SNE (may take ~20-40 s)…")
+    tsne   = TSNE(n_components=2, perplexity=40, random_state=42, max_iter=1000)
+    Z      = tsne.fit_transform(Xs)
+    colors = get_colors(labels, PALETTE)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    fig.patch.set_facecolor("#0F1117")
+    ax.set_facecolor("#1A1D27")
+
+    ax.scatter(Z[:, 0], Z[:, 1], c=colors, s=16, alpha=0.65, linewidths=0)
+    ax.set_xlabel("t-SNE 1", color="#CCCCCC", fontsize=10)
+    ax.set_ylabel("t-SNE 2", color="#CCCCCC", fontsize=10)
+    ax.tick_params(colors="#AAAAAA")
+    for spine in ax.spines.values():
+        spine.set_edgecolor("#333344")
+
+    ax.legend(
+        handles=legend_patches(PALETTE),
+        framealpha=0.2, labelcolor="white", fontsize=9,
+    )
+    ax.set_title(
+        "t-SNE Projection — Cooling Strategy Labels",
+        color="white", fontsize=14, fontweight="bold",
+    )
+    plt.tight_layout()
+    out = os.path.join(OUTPUT_DIR, "new_labels_tsne_projection.png")
+    fig.savefig(out, dpi=150, facecolor=fig.get_facecolor())
+    plt.close(fig)
+    print(f"  Saved: {out}")
+
+
+

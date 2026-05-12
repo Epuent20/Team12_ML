@@ -31,18 +31,6 @@ KW_final/
 ## Quick Start
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/<your-username>/KW_final.git
-cd KW_final
-
-# 2. Create a virtual environment (recommended)
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# macOS / Linux
-source .venv/bin/activate
-
-# 3. Install dependencies
 pip install -r requirements.txt
 
 # 4. Run the full pipeline
@@ -70,10 +58,6 @@ python kW.py
 
 The trained model achieves strong predictive accuracy on the held-out test set. Running the pipeline prints RMSE and R² to the console and saves a scatter plot to `output/model_performance_graph.png`.
 
-## Dataset
 
-The raw data (`cold_source_control_dataset.csv`) originates from a Kaggle cold-source-control dataset containing operational sensor readings such as workload, inlet/outlet temperatures, and cooling power consumption.
 
-## License
 
-This project is provided for educational and research purposes.

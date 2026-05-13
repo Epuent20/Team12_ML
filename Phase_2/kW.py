@@ -10,10 +10,13 @@ from sklearn.metrics import mean_squared_error, r2_score
 
 # file paths
 
-RAW_DATA_PATH        = 'data/raw/cold_source_control_dataset.csv'
-PROCESSED_FILE_PATH  = 'data/processed/cleaned_telemetry.csv'
-MODEL_SAVE_PATH      = 'random_forest_model.pkl'
-PERF_GRAPH_PATH      = 'output/model_performance_graph.png'
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+RAW_DATA_PATH        = os.path.join(SCRIPT_DIR, 'data/raw/cold_source_control_dataset.csv')
+PROCESSED_DATA_DIR   = os.path.join(SCRIPT_DIR, 'data/processed')
+PROCESSED_FILE_PATH  = os.path.join(PROCESSED_DATA_DIR, 'cleaned_telemetry.csv')
+MODEL_SAVE_PATH      = os.path.join(SCRIPT_DIR, 'random_forest_model.pkl')
+OUTPUT_DIR           = os.path.join(SCRIPT_DIR, 'output')
+PERF_GRAPH_PATH      = os.path.join(OUTPUT_DIR, 'model_performance_graph.png')
 
 TARGET_COL = 'Output'
 ACTION_COL = 'Cooling_Strategy_Action'
@@ -22,7 +25,7 @@ ACTION_COL = 'Cooling_Strategy_Action'
 # data cleaning
 
 def clean_data():
-    os.makedirs('data/processed', exist_ok=True)
+    os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
     print("Loading raw data...")
     df = pd.read_csv(RAW_DATA_PATH)
 
@@ -71,7 +74,7 @@ def train_and_visualize():
     plt.ylabel('AI Predicted Cooling Power (kW)')
     plt.legend()
     plt.grid(True, alpha=0.3)
-    os.makedirs('output', exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     plt.savefig(PERF_GRAPH_PATH)
     print(f"\nSuccess! Performance graph saved as '{PERF_GRAPH_PATH}'")
     plt.show()

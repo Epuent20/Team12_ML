@@ -30,8 +30,9 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-# output directory 
-OUTPUT_DIR = "output"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
+DATA_DIR = os.path.join(SCRIPT_DIR, "data")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # styling
@@ -52,7 +53,7 @@ PALETTE = ["#58a6ff", "#3fb950", "#d29922", "#f85149", "#bc8cff"]
 MODEL_COLORS = {"Random Forest": "#58a6ff", "SVM": "#3fb950", "KNN": "#d29922"}
 
 # 1. load & prepare dataset
-df = pd.read_csv(os.path.join("data", "cold_source_control_dataset.csv"))
+df = pd.read_csv(os.path.join(DATA_DIR, "cold_source_control_dataset.csv"))
 
 # Encode the strategy label
 le = LabelEncoder()

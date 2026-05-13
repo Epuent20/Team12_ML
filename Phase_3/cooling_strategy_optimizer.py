@@ -20,8 +20,9 @@ import seaborn as sns
 
 # setting paths and variables
 
-DATASET_PATH = os.path.join("data", "cold_source_control_dataset.csv")
-OUTPUT_DIR = "output"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DATASET_PATH = os.path.join(SCRIPT_DIR, "data", "cold_source_control_dataset.csv")
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
 MODEL_PATH = os.path.join(OUTPUT_DIR, "random_forest_model.pkl")
 LABELED_DATASET_PATH = os.path.join(OUTPUT_DIR, "labeled_dataset.csv")
 RANDOM_STATE = 42
